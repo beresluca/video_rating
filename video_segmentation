@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# Bash script to segment a video at given time points, using ffmpeg
+#
+# USAGE: video_segmentation INPUTDIR PAIRNO SEGMENTS
+#
+# Positional argments are 
+#   INPUTDIR - str, path to folder containing video file to segment
+#   PAIRNO -  int, pair number, needed for finding proper file and for output file names
+#   SEGMENTS - str, path ot text file containing segmentation info
+#
+# The file that SEGMENTS points to should be a text file with lines defining the segments, e.g.:
+# "
+# 1 00:00:00 00:03:00
+# 2 00:02:30 00:06:45 
+# ...
+# "
+#
+# Inputs are fed into ffmpeg for actual video segmentation, with a command like this:
+# ffmpeg -i pair999_freeConv_combined_video.mp4 -ss 00:08:55 -to 00:12:00 -c copy -reset_timestamps 1 pair999_freeConv_combined_video_seg4.mp4
+#
+
+echo -e "\nInput arg INPUTDIR: "$1
+echo "Input arg PAIRNO: "$2
+echo "Input arg SEGMENTS: "$3
+
+# check input args
+if [[ $# -ne 3 ]]; then
+    echo "Input args INPUTDIR, PAIRNO and SEGMENTS are required!"
+    exit 1
+fi
+if [ ! -d "$1" ]; then
+    echo "Input arg INPUTDIR is not a valid folder path!"
+    exit 2
+else
+    INPUTDIR=$1
+fi
+if (( $2 > 0 && $2 < 1000)) ; then
+    PAIRNO=$2
+else
+    echo "Input arg PAIRNO should be integer between 1 and 999!"
+    exit 2
+fi
+if [ ! -f $3 ]; then
+    echo "Input arg SEGMENTS is not a valid file path!"    
+    exit 3
+else
+    SEGMENTS=$3
+fi
+
+# define video file to segment
+VIDEOFILE=$INPUTDIR"/pair"$PAIRNO"_freeConv_combined_video.mp4"
+if [ ! -f $VIDEOFILE ]; then
+    echo "Cannot find video file at "$VIDEOFILE"!!!"    
+    exit 4
+fi
+
+# parse SEGMENTS file
+SEGMENTNO=()
+SEGMENTSTART=()
+SEGMENTEND=()
+COUNTER=0
+echo -e "\nReading and parsing lines of "$SEGMENTS":"
+while read -r line; do
+    TMPARRAY=($line)  # array conversion
+    SEGMENTNO[$COUNTER]=${TMPARRAY[0]}
+    SEGMENTSTART[$COUNTER]=${TMPARRAY[1]}
+    SEGMENTEND[$COUNTER]=${TMPARRAY[2]}
+    ((COUNTER=COUNTER+1))
+done < $SEGMENTS
+
+# user feedback about parsing
+echo -e "\nGot the following segment info from "$SEGMENTS
+echo "Segment numbers: "${SEGMENTNO[@]}
+echo "Segment starts: "${SEGMENTSTART[@]}
+echo "Segment ends: "${SEGMENTEND[@]}
+
+# call ffmpeg using parsed segments info
+SEGMENTMAX=${#TMPARRAY[@]}
+for (( i=0; i<=$SEGMENTMAX-1; i++ )) ; do
+    echo -e "\nPart "$i", with segment number "${SEGMENTNO[i]}" between "${SEGMENTSTART[i]}" and "${SEGMENTEND[i]}
+    OUTFILE=$INPUTDIR"/pair"$PAIRNO"_freeConv_combined_video_seg"${SEGMENTNO[i]}".mp4"
+    ffmpeg i- "$VIDEOFILE" -ss "${SEGMENTSTART[i]}" -to "${SEGMENTEND[i]}" -c copy -reset_timestamps 1 "$OUTFILE"
+done
+
+
