@@ -31,7 +31,8 @@ function [selects] = survey_mouse(pairNo, quest_type, rater_name)
   %--------------------------------------------------------------------------
   %                       Global variables
   %--------------------------------------------------------------------------
-  global window windowRect fontsize xCenter yCenter white;
+  %global window windowRect fontsize xCenter yCenter white;
+  global win winRect fontsize xCenter yCenter white;
   
   
   %--------------------------------------------------------------------------
@@ -42,7 +43,7 @@ function [selects] = survey_mouse(pairNo, quest_type, rater_name)
   % Using function prepareScreen.m
   % This returned vbl may not be precise; flip again to get a more precise one
   % This screen size is for test
-  [window, windowRect, vbl, ifi] = prepareScreen([0 0 1920 1080]);
+  % [window, windowRect, vbl, ifi] = prepareScreen([0 0 1920 1080]);
   HideCursor;
   
   
@@ -55,7 +56,7 @@ function [selects] = survey_mouse(pairNo, quest_type, rater_name)
   root_dir = "/home/lucab/Documents/";
   
   % Screen center
-  [xCenter, yCenter] = RectCenter(windowRect);
+  [xCenter, yCenter] = RectCenter(winRect);
   
   
   % Define some DEFAULT values
@@ -80,38 +81,6 @@ function [selects] = survey_mouse(pairNo, quest_type, rater_name)
   end
   
     
-##    % construct the .mat file for later saving
-##    ##datadir = ["/home/mordor/CommGame/pair", num2str(pairNo), "/"];
-##    datadir = root_dir;
-##    if ~exist(datadir)
-##      error('Data folder %s does not exist!', datadir);    
-##    endif
-##    
-##    
-##    surveyDataFile = [datadir, "pair", num2str(pairNo), "_", quest_type , "_", rater_name, ".mat"];
-##    
-##    
-##    if exist(surveyDataFile)
-##      user_input = yes_or_no('Survey .mat file already exists! Do you want to overwrite it?');
-##      if user_input == 0
-##        error('Quitting...');
-##      endif
-##    end
-##    
-    ##% chosing the right mouse device 
-    ##[mouseIndices, productnames] = GetMouseIndices;
-    ##mouseName = 'Logitech';
-    ##device = 'mouse';    
-    ##for k = 1:numel(productnames)
-    ##    if strncmp(productnames(k), mouseName, length(mouseName))
-    ##        mouseid = mouseIndices(k);
-    ##    endif
-    ##endfor
-    ##
-    ##disp([char(10), num2str(mouseIndices)]);
-    ##disp(productnames);
-    ##disp([char(10), 'Using mouse with index: ', num2str(mouseid)]);
-    
     %------------------------------------------------------------------------------------
     %                     Prepare survey texture 
     %------------------------------------------------------------------------------------
@@ -124,10 +93,14 @@ function [selects] = survey_mouse(pairNo, quest_type, rater_name)
     %-------------------------------------------------------------------------------------
     
     % Set FONT for instructions
-    Screen('Textsize', window, 21);
-    Screen('TextFont', window, 'Liberation Sans');
+    Screen('Textsize', win, 24);
+    %Screen('TextFont', win, 'Liberation Sans');
+    
+    % do we need this?
+    Screen('BlendFunction', win, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     % COLOR settings
+    %backgrColor = [255 255 255];  % white background
     % Set color for identifying currently focused question and answer
     % and selected answer
     qcolor = [0 0 255 20];
@@ -176,32 +149,46 @@ function [selects] = survey_mouse(pairNo, quest_type, rater_name)
     char(10), "A program automatikusan kilép, ha minden kérdésre válaszoltál.",...
     char(10), char(10), "Kattins bárhova a képernyőn és kezdheted is a kitöltést."];   
     
-    main_instruc_rater = ["A következőkben kérjük értékeld a beszélégetést.",...
+    main_instruc_rater_seg = ["A következőkben kérjük értékeld a beszélégetés előző részletét.",...
     char(10), char(10), "Mindig csak egy választ tudsz megjelölni.", ...          
-    char(10), "A következő kérdésekre úgy görgethetsz, ha leviszed az egeret a lap aljára. ", char(10),... 
+    char(10), char(10), "A következő kérdésekre úgy görgethetsz, ha leviszed az egeret a lap aljára. ", char(10),... 
     char(10), "A program automatikusan kilép, ha minden kérdésre válaszoltál.",...
     char(10), char(10), "Kattins bárhova a képernyőn és kezdheted is a kitöltést."];
     
-    Screen('FillRect', window, white, paperRect);
-    if strfind(filename, 'eval');
-      [~, ny] = DrawFormattedText(window, main_instruc_rater, 'center', 'center', 0);
-    else
-      [~, ny] = DrawFormattedText(window, main_instruc_survey, 'center', 'center', 0);
+    main_instruc_rater_pair = ["A következőkben kérjük értékeld a beszélégetés egészét.",...
+    char(10), char(10), "Mindig csak egy választ tudsz megjelölni.", ...          
+    char(10), char(10), "A következő kérdésekre úgy görgethetsz, ha leviszed az egeret a lap aljára. ", char(10),... 
+    char(10), "A program automatikusan kilép, ha minden kérdésre válaszoltál.",...
+    char(10), char(10), "Kattins bárhova a képernyőn és kezdheted is a kitöltést."];
+    
+    main_instruc_rater_ind = ["A következőkben kérjük értékeld a beszélégetés egészét, egyénekre lebontva.",...
+    char(10), char(10), "Mindig csak egy választ tudsz megjelölni.", ...          
+    char(10), char(10), "A következő kérdésekre úgy görgethetsz, ha leviszed az egeret a lap aljára. ", char(10),... 
+    char(10), "A program automatikusan kilép, ha minden kérdésre válaszoltál.",...
+    char(10), char(10), "Kattins bárhova a képernyőn és kezdheted is a kitöltést."];
+    
+    Screen('FillRect', win, [0 0 0], paperRect); % black background
+    if strfind(filename, 'segment_eval');
+      [~, ny] = DrawFormattedText(win, main_instruc_rater_seg, 'center', 'center', white, 0);
+    elseif strfind(filename, 'pair_eval');
+      [~, ny] = DrawFormattedText(win, main_instruc_rater_pair, 'center', 'center', white, 0);
+    elseif strfind(filename, 'individual_eval');
+      [~, ny] = DrawFormattedText(win, main_instruc_rater_ind, 'center', 'center', white, 0);
     end
     %DrawFormattedText(window, currDeviceIn, 'center', ny+questH, 0);
-    Screen('Flip', window);
+    Screen('Flip', win);
     
     % Wait for 10 secs here for participants to read the instruction before
     % check for any input
-    WaitSecs(2);
+    WaitSecs(1);
     
     % If any key clicked, go to the loop
     %checkClicked(window);
     while true   
-      [~,~, buttons] = GetMouse(window);
+      [~,~, buttons] = GetMouse(win);
       if any(buttons)
         while any(buttons)
-          [~,~, buttons] = GetMouse(window);
+          [~,~, buttons] = GetMouse(win);
         end
         break
       end
@@ -212,38 +199,38 @@ function [selects] = survey_mouse(pairNo, quest_type, rater_name)
     %================================================================================================
     
     % Show the survey
-    Screen('FillRect', window, white, paperRect);
-    Screen('DrawTextures', window, paperTexture, [], paperRect, 0, 0);
-    Screen('Flip', window);
+    Screen('FillRect', win, white, paperRect);
+    Screen('DrawTextures', win, paperTexture, [], paperRect, 0, 0);
+    Screen('Flip', win);
     
     
     % Start loop to monitor the mouse position and check for click
     while true
       % Get current coordinates of mouse
-      [x, y, buttons] = GetMouse(window);
+      [x, y, buttons] = GetMouse(win);
       
       % Don't let the mouse exceed our paper
       if x > paperlimit(2)
-        SetMouse(paperlimit(2), y, window);
+        SetMouse(paperlimit(2), y, win);
       elseif x < paperlimit(1)
-        SetMouse(paperlimit(1), y, window);
+        SetMouse(paperlimit(1), y, win);
       end
       
       % Scroll the paper
       % Since GetMouseWheel is not supported in linux,
       % I'll use something like hot corners to scroll the paper
-      if y > windowRect(4)-2 && offset > offsetRange(1)
+      if y > winRect(4)-2 && offset > offsetRange(1)
         offset = offset - 1;
-        SetMouse(x, y-50, window);
-      elseif y < windowRect(2) + 2 && offset < offsetRange(2)
+        SetMouse(x, y-50, win);
+      elseif y < winRect(2) + 2 && offset < offsetRange(2)
         offset = offset + 1;
-        SetMouse(x, y+50, window);
+        SetMouse(x, y+50, win);
       end
       
       % Move the survey texture with the offset
       newpaper = paperRect;
       newpaper(2:2:end) = newpaper(2:2:end) + offset * questH;
-      Screen('DrawTextures', window, paperTexture, [], newpaper, 0, 0);
+      Screen('DrawTextures', win, paperTexture, [], newpaper, 0, 0);
       
       % Find the nearest question from mouse
       [~, newcurrQ] = min(abs(questYs+offset*questH - y));
@@ -254,7 +241,7 @@ function [selects] = survey_mouse(pairNo, quest_type, rater_name)
       
       currY = questYs(currQ) + offset * questH;
       qrect = CenterRectOnPointd(baseQRect, xCenter, currY);
-      Screen('FillRect', window, qcolor, qrect); % draw a rect over the question
+      Screen('FillRect', win, qcolor, qrect); % draw a rect over the question
       
       % Find the nearest answer from mouse
       switch survey_type
@@ -289,27 +276,27 @@ function [selects] = survey_mouse(pairNo, quest_type, rater_name)
             selects(currQ, currA) = 1;
           end
           arect(2:2:end) = arect(2:2:end) + offset * questH;
-          Screen('FrameRect', window, acolor, arect); % draw a rect over the answer
+          Screen('FrameRect', win, acolor, arect); % draw a rect over the answer
         end
         % Draw rects to identify selected answers
         k = find(selects);
         if ~isempty(k) % check if any answer been selected
           seleRects = tempRects;
           seleRects(2:2:end, :) = seleRects(2:2:end, :) + offset * questH;
-          Screen('FillRect', window, scolor, seleRects);
+          Screen('FillRect', win, scolor, seleRects);
         end
         
-        Screen('Flip', window);
+        Screen('Flip', win);
         
-        % If all questions have been answered, quit the survey after 3 secs
+        % If all questions have been answered, quit the survey after 2 secs
         if size(k, 1) == questNum
-          WaitSecs(3);
+          WaitSecs(2);
           break
         end
         
         % Do not go back until all buttons are released
         while find(buttons)
-          [x, y, buttons] = GetMouse(window);
+          [x, y, buttons] = GetMouse(win);
         end
       end
       
@@ -327,14 +314,20 @@ function [selects] = survey_mouse(pairNo, quest_type, rater_name)
       selects % show in command line
       
       WaitSecs(1);
-      Screen('Flip', window);
+      Screen('Flip', win);
       
       % End of survey
-      DrawFormattedText(window, ["Kérdőív vége. ", char(10), char(10), "A következő részhez a SPACE billentyűvel léphetsz."], 'center', 'center', 0);
-      Screen('Flip', window);
+      txtColor = white;
+      if strfind(filename, 'individual_eval')
+        DrawFormattedText(win, ["Feladat vége. " char(10), char(10), "Köszönjük az értékelést!"], 'center', 'center', white, 0);  
+      else
+        DrawFormattedText(win, ["Kérdőív vége. "], 'center', 'center', white, 0);
+      end
+      
+      Screen('Flip', win);
       WaitSecs(3);
       
-      Screen('Flip', window);
+      Screen('Flip', win);
       Screen('Close');
       %sca;
       
