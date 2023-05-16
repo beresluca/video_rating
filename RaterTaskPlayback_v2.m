@@ -24,6 +24,8 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
   %
   
   
+  global win winRect;
+  
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%%%%%% Input checks %%%%%%%%%%%%%%%%%%%%%%%
@@ -68,9 +70,10 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
   instruction2 = ['Kérlek próbáld ki a csúszka használatát! ' char(10),...
   char(10), 'Ha felkészültél, vidd az egeret a skála bal végéhez, ',...
   'ezután egy bal klikkel indíthatod a feladatot.'];          
-  breakMessage1 = ['A részlet végére értünk.', char(10),...
-  'Most az előző részhez tartozó kérdőív következik.'];    
+  breakMessage1 = ['A részlet végére értünk.'];    
   breakMessage2 = ['A következő részhez a SPACE billentyűvel ugorhatsz.'];
+  endMessage = ['A beszélgetés végére értél.' char(10), char(10),...
+                'Nyomj egy SPACE-t ha készen állsz az értékelésre.'];
   
   instrTime = 2;
   tutorialTimeout = 600; % timeout for tutorial part 
@@ -136,12 +139,7 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
   sliderFiles = cell(segmentNo, 1);
   timestampsFiles = cell(segmentNo, 1);
   survey_Files = cell(segmentNo, 1);
-##  for i = 1:segmentNo
-##    sliderFiles{i} = fullfile(inputDir, ['/pair', num2str(pairNo), '_sliderPosition_', userName, '_seg', num2str(segmentNo), '.mat']);
-##    timestampsFiles{i} = fullfile(inputDir, ['/pair', num2str(pairNo), '_subjTimes_', userName, '_seg', num2str(segmentNo), '.mat']);
-##    surveyFiles{i} = fullfile(inputDir, ['/pair', num2str(pairNo), '_survey_', userName, '_seg', num2str(segmentNo), '.mat']);
-##  end
-##  
+
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%%%%%% Psychtoolbox initializations %%%%%%%
@@ -153,7 +151,6 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
   RestrictKeysForKbCheck([KbName('ESCAPE'), KbName('space')]);  % only report ESCape key press via KbCheck
   GetSecs; WaitSecs(0.1); KbCheck(); % dummy calls
   
-  
   try
     
     
@@ -162,7 +159,7 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
     
     % Init an openwindow in top-left corner, skip tests
     oldsynclevel = Screen('Preference', 'SkipSyncTests', 1);
-    [win, rect] = Screen('OpenWindow', screen, backgrColor, windowSize);
+    [win, winRect] = Screen('OpenWindow', screen, backgrColor, windowSize);
     Screen('TextSize', win, windowTextSize);       
     HideCursor(win);
     
@@ -180,11 +177,11 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
       error('Only right, center and left are possible start positions');
     end
     
-    SetMouse(round(x), round(rect(4)*scalaPosition), win);
+    SetMouse(round(x), round(winRect(4)*scalaPosition), win);
     
-    leftTick   = [rect(3)*(1-scalaLength) rect(4)*scalaPosition - lineLength rect(3)*(1-scalaLength) rect(4)*scalaPosition  + lineLength];
-    rightTick  = [rect(3)*scalaLength rect(4)*scalaPosition - lineLength rect(3)*scalaLength rect(4)*scalaPosition  + lineLength];
-    horzLine   = [rect(3)*scalaLength rect(4)*scalaPosition rect(3)*(1-scalaLength) rect(4)*scalaPosition];
+    leftTick   = [winRect(3)*(1-scalaLength) winRect(4)*scalaPosition - lineLength winRect(3)*(1-scalaLength) winRect(4)*scalaPosition  + lineLength];
+    rightTick  = [winRect(3)*scalaLength winRect(4)*scalaPosition - lineLength winRect(3)*scalaLength winRect(4)*scalaPosition  + lineLength];
+    horzLine   = [winRect(3)*scalaLength winRect(4)*scalaPosition winRect(3)*(1-scalaLength) winRect(4)*scalaPosition];
     if length(anchors) == 2
       textBounds = [Screen('TextBounds', win, sprintf(anchors{1})); Screen('TextBounds', win, sprintf(anchors{2}))];
     else
@@ -193,7 +190,7 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
     
     % Calculate the range of the scale, which will be needed to calculate the
     % position
-    scaleRange = round(rect(3)*(1-scalaLength)):round(rect(3)*scalaLength); % Calculates the range of the scale 
+    scaleRange = round(winRect(3)*(1-scalaLength)):round(winRect(3)*scalaLength); % Calculates the range of the scale 
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -215,10 +212,10 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
     offwin = Screen('OpenOffscreenWindow', win, offbackgrColor, windowSize);
     DrawFormattedText(offwin, instruction2, 'center', 'center', txtColor);
     % Drawing the question as text
-    DrawFormattedText(offwin, question, 'center', rect(4)*(scalaPosition - 0.03), txtColor);    
+    DrawFormattedText(offwin, question, 'center', winRect(4)*(scalaPosition - 0.03), txtColor);    
     % Drawing the anchors of the scale as text   
-    DrawFormattedText(offwin, anchors{1}, leftTick(1, 1) - textBounds(1, 3)/2,  rect(4)*scalaPosition+40); % Left point
-    DrawFormattedText(offwin, anchors{2}, rightTick(1, 1) - textBounds(2, 3)/2,  rect(4)*scalaPosition+40); % Right point  
+    DrawFormattedText(offwin, anchors{1}, leftTick(1, 1) - textBounds(1, 3)/2,  winRect(4)*scalaPosition+40); % Left point
+    DrawFormattedText(offwin, anchors{2}, rightTick(1, 1) - textBounds(2, 3)/2,  winRect(4)*scalaPosition+40); % Right point  
     % Drawing the scale
     Screen('DrawLine', offwin, scaleColor, leftTick(1), leftTick(2), leftTick(3), leftTick(4), width);     % Left tick
     Screen('DrawLine', offwin, scaleColor, rightTick(1), rightTick(2), rightTick(3), rightTick(4), width); % Right tick
@@ -236,14 +233,14 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
       [x,~,buttons] = GetMouse(win);  
       
       % Stop at upper and lower bound
-      if x > rect(3)*scalaLength
-        x = rect(3)*scalaLength;
-      elseif x < rect(3)*(1-scalaLength)
-        x = rect(3)*(1-scalaLength);
+      if x > winRect(3)*scalaLength
+        x = winRect(3)*scalaLength;
+      elseif x < winRect(3)*(1-scalaLength)
+        x = winRect(3)*(1-scalaLength);
       end
       
       % The slider
-      Screen('DrawLine', win, sliderColor, x, rect(4)*scalaPosition - lineLength, x, rect(4)*scalaPosition  + lineLength, sliderwidth);
+      Screen('DrawLine', win, sliderColor, x, winRect(4)*scalaPosition - lineLength, x, winRect(4)*scalaPosition  + lineLength, sliderwidth);
       
       % Caculates position
       if x <= (min(scaleRange))
@@ -255,7 +252,7 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
       
       % Display position
       if displayPos
-        DrawFormattedText(win, num2str(round(position)), 'center', rect(4)*(scalaPosition - 0.07));             
+        DrawFormattedText(win, num2str(round(position)), 'center', winRect(4)*(scalaPosition - 0.07));             
       end              
       
       % check if there was a button press
@@ -370,12 +367,12 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
         
         txtColor = [255 255 255];
         % Drawing the question as text
-        DrawFormattedText(win, question, 'center', rect(4)*(scalaPosition - 0.03), txtColor); 
+        DrawFormattedText(win, question, 'center', winRect(4)*(scalaPosition - 0.03), txtColor); 
         % Drawing the anchors of the scale as text
         if length(anchors) == 2
           % Only left and right anchors
-          DrawFormattedText(win, anchors{1}, leftTick(1, 1) - textBounds(1, 3)/2,  rect(4)*scalaPosition+40); % Left point
-          DrawFormattedText(win, anchors{2}, rightTick(1, 1) - textBounds(2, 3)/2,  rect(4)*scalaPosition+40); % Right point          
+          DrawFormattedText(win, anchors{1}, leftTick(1, 1) - textBounds(1, 3)/2,  winRect(4)*scalaPosition+40); % Left point
+          DrawFormattedText(win, anchors{2}, rightTick(1, 1) - textBounds(2, 3)/2,  winRect(4)*scalaPosition+40); % Right point          
         end
         % Drawing the scale
         Screen('DrawLine', win, scaleColor, leftTick(1), leftTick(2), leftTick(3), leftTick(4), width);     % Left tick
@@ -386,14 +383,14 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
         [x, ~, buttons] = GetMouse(win);  
         
         % Stop at upper and lower bound
-        if x > rect(3)*scalaLength
-          x = rect(3)*scalaLength;
-        elseif x < rect(3)*(1-scalaLength)
-          x = rect(3)*(1-scalaLength);
+        if x > winRect(3)*scalaLength
+          x = winRect(3)*scalaLength;
+        elseif x < winRect(3)*(1-scalaLength)
+          x = winRect(3)*(1-scalaLength);
         end
         
         % Draw the slider
-        Screen('DrawLine', win, sliderColor, x, rect(4)*scalaPosition - lineLength, x, rect(4)*scalaPosition  + lineLength, sliderwidth);
+        Screen('DrawLine', win, sliderColor, x, winRect(4)*scalaPosition - lineLength, x, winRect(4)*scalaPosition  + lineLength, sliderwidth);
         
         % Caculate position
         if x <= (min(scaleRange))
@@ -405,7 +402,7 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
         
         % Display position
         if displayPos
-          DrawFormattedText(win, num2str(round(position)), 'center', rect(4)*(scalaPosition - 0.07));             
+          DrawFormattedText(win, num2str(round(position)), 'center', winRect(4)*(scalaPosition - 0.07));             
         end           
         
         % Flip
@@ -435,8 +432,8 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
       Screen('CloseMovie');
       disp([char(10), char(10), '  Segment ended!']);
       
-      txtColor = [255 255 255];
       % Break message between segments
+      txtColor = [255 255 255];
       DrawFormattedText(win, breakMessage1, 'center', 'center', txtColor, [], [], [], 1.5);
       breakMessageStart = Screen('Flip', win);
       WaitSecs(3);
@@ -465,12 +462,18 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
       selects = survey_mouse(pairNo, "segment_eval", userName);
       save(surveyFiles{segmentIdx}, 'selects', '-v7');
       
-      % need to change back to white text color for the slider
+      % need to change back to white text color
       txtColor = [255 255 255];
       
       % Break message between segments
-      DrawFormattedText(win, breakMessage2, 'center', 'center', txtColor, [], [], [], 1.5);
-      breakMessageStart = Screen('Flip', win);
+      if segmentIdx < 5
+        DrawFormattedText(win, breakMessage2, 'center', 'center', txtColor, [], [], [], 1.5);
+        breakMessageStart = Screen('Flip', win);
+      else
+        DrawFormattedText(win, endMessage, 'center', 'center', txtColor, [], [], [], 1.5);
+        breakMessageStart = Screen('Flip', win);        
+      end
+      
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       
@@ -530,3 +533,4 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
   
   
 endfunction
+
