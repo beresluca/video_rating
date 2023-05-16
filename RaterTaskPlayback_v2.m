@@ -1,27 +1,29 @@
-function RaterTaskPlayback_v2(inputDir, pairNo)
-  %% Video and audio playback script for the rater task.
-  %
-  % USAGE: RaterTaskPlayback(inputDir, pairNo)
-  %
-  % Uses the material from the free conversation task. 
-  % Includes evaluation of predictability with a slider.
-  %
-  % Notes:
-  % - Slider position is defined relative to the screen size 
-  % - Exits after video is done playing or max timeout is reached (vidLength) or 
-  %   if you press ESC
-  % 
-  % Inputs:
-  % inputDir  - Char array, path to folder containing relevant audio and video files.
-  % pairNo    - Numeric value, pair number, one of 1:999.
-  %
-  % Outputs:
-  % Video display and audio playback related params are saved out into a .mat file
-  % at pair99_subjtimes.mat
-  %
-  % Rater behavioral data (slider position) are save out into a .mat file at
-  % pair99Gondor_sliderPosition.mat 
-  %
+function RaterTaskPlayback_v2(pairNo)
+%% Video and audio playback script for the rater task.
+%
+% USAGE: RaterTaskPlayback(pairNo)
+%
+% Uses the material from the free conversation task. 
+% Includes evaluation of predictability with a slider.
+%
+% Looks for files in a fixed path: 
+% /home/gondor/rater_task/pairPAIRNO
+%
+% Notes:
+% - Slider position is defined relative to the screen size 
+% - Exits after video is done playing or max timeout is reached (vidLength) or 
+%   if you press ESC
+% 
+% Inputs:
+% pairNo    - Numeric value, pair number, one of 1:999.
+%
+% Outputs:
+% Video display and audio playback related params are saved out into a .mat file
+% at pair99_subjtimes.mat
+%
+% Rater behavioral data (slider position) are save out into a .mat file at
+% pair99Gondor_sliderPosition.mat 
+%
   
   
   global win winRect;
@@ -30,15 +32,13 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%%%%%% Input checks %%%%%%%%%%%%%%%%%%%%%%%
   
-  if nargin ~= 2
-    error('Input args "inputDir" and "pairNo" are required!');
-  end
-  if ~exist(inputDir, 'dir')
-    error('Input arg "inputDir" should be a valid path!');
+  if nargin ~= 1
+    error('Input arg "pairNo" is required!');
   end
   if ~ismember(pairNo, 1:999)
     error('Input arg "pairNo" should be in range 1:999!');
   end
+
   
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,6 +52,11 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
   
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   %%% Screen / vid / audio / task params %%%%%
+  
+  % HARDCODED PATH
+  % input folder
+  % inputDir = ['/home/mordor/rater_task/pair', num2str(pairNo), '/'];
+  inputDir = ['/home/lucab/rater_task/pair', num2str(pairNo), '/'];
   
   % screen
   backgrColor = [0 0 0];  % black background
@@ -277,6 +282,8 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
     %%%%%%%%%%%%%%%%%%%%%%%   LOOP OVER SEGMENTS   %%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     
+    escFlag = false
+    
     for segmentIdx = 1:segmentNo
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -335,6 +342,7 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
         
         % if ESC was pressed, break out of while loop (finish task)
         if keyIsDown && keyCode(KbName('ESCAPE'))
+          escflag = true
           break;
           
           % if SPACE was pressed, pause audio + video, start again at next press
@@ -474,8 +482,21 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
         breakMessageStart = Screen('Flip', win);        
       end
       
+      % Saving important variables
+      % Strip nans from array ends
+      texTimestamps(count+1:end, :) = [];
+      flipTimes(count+1:end, :) = [];
+      sliderPos(count+1:end, :) = [];
+      audioData(count+1:end, :) = [];
+      % save
+      save(sliderValueFile, 'sliderPos', '-v7');  
+      save(timestampsFile, 'flipTimes', 'audioRealStart', 'audioStartStatus',... 
+      'audioEndStatus', 'audioData', 'texTimestamps', 'startAt', '-v7');
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      if escFlag
+        break;
+      end
       
       % Wait until key press
       KbReleaseWait;
@@ -501,18 +522,10 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
     Screen('CloseMovie');
     disp([char(10), char(10), '  Movie ended, bye!']);
     
-    % Saving important variables
-    % Strip nans from array ends
-    texTimestamps(count+1:end, :) = [];
-    flipTimes(count+1:end, :) = [];
-    sliderPos(count+1:end, :) = [];
-    audioData(count+1:end, :) = [];
-    % save
-    save(sliderValueFile, 'sliderPos', '-v7');  
-    save(timestampsFile, 'flipTimes', 'audioRealStart', 'audioStartStatus',... 
-    'audioEndStatus', 'audioData', 'texTimestamps', 'startAt', '-v7');
     
-    % launch surveys at the end of the video
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%% Launch surveys at the end of the video %%%%%%%%%%%%
+    
     selects = survey_mouse(pairNo, "pair_eval", userName);
     save(pair_surveyFile, 'selects', '-v7');
     selects = survey_mouse(pairNo, "individual_eval", userName);
@@ -533,4 +546,3 @@ function RaterTaskPlayback_v2(inputDir, pairNo)
   
   
 endfunction
-
