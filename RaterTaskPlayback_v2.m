@@ -453,20 +453,22 @@ function RaterTaskPlayback_v2(pairNo)
       sliderPos(count+1:end, :) = [];
       audioData(count+1:end, :) = [];
       
-      
-      %%%%%%%%%%%%%%%%%%%%%%% Survey part %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      
-      % construct output mat files for the surveys
+      % construct output mat files
       sliderFiles{segmentIdx} = fullfile(inputDir, ['/pair', num2str(pairNo), '_sliderPosition_', userName, '_seg', num2str(segmentIdx), '.mat']);
       timestampsFiles{segmentIdx} = fullfile(inputDir, ['/pair', num2str(pairNo), '_subjTimes_', userName, '_seg', num2str(segmentIdx), '.mat']);
-      surveyFiles{segmentIdx} = fullfile(inputDir, ['/pair', num2str(pairNo), '_survey_', userName, '_seg', num2str(segmentIdx), '.mat']);
       
       % save important variables from the slider 
       save(sliderFiles{segmentIdx}, 'sliderPos', '-v7');  
       save(timestampsFiles{segmentIdx}, 'flipTimes', 'audioRealStart', 'audioStartStatus',... 
       'audioEndStatus', 'audioData', 'texTimestamps', 'startAt', '-v7');
       
-      % Launch survey (will initialize a new window and then close it)
+      
+      %%%%%%%%%%%%%%%%%%%%%%% Survey part %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
+      % construct output mat files for the surveys
+      surveyFiles{segmentIdx} = fullfile(inputDir, ['/pair', num2str(pairNo), '_survey_', userName, '_seg', num2str(segmentIdx), '.mat']);
+      
+      % Launch survey (will use the already open window, will not prepare a new screen)
       selects = survey_mouse(pairNo, "segment_eval", userName);
       save(surveyFiles{segmentIdx}, 'selects', '-v7');
       
@@ -481,17 +483,6 @@ function RaterTaskPlayback_v2(pairNo)
         DrawFormattedText(win, endMessage, 'center', 'center', txtColor, [], [], [], 1.5);
         breakMessageStart = Screen('Flip', win);        
       end
-      
-      % Saving important variables
-      % Strip nans from array ends
-      texTimestamps(count+1:end, :) = [];
-      flipTimes(count+1:end, :) = [];
-      sliderPos(count+1:end, :) = [];
-      audioData(count+1:end, :) = [];
-      % save
-      save(sliderValueFile, 'sliderPos', '-v7');  
-      save(timestampsFile, 'flipTimes', 'audioRealStart', 'audioStartStatus',... 
-      'audioEndStatus', 'audioData', 'texTimestamps', 'startAt', '-v7');
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       if escFlag
@@ -524,7 +515,7 @@ function RaterTaskPlayback_v2(pairNo)
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%% Launch surveys at the end of the video %%%%%%%%%%%%
+    %%%%%%% Launch surveys at the end of the video + save %%%%%%%%%%%%
     
     selects = survey_mouse(pairNo, "pair_eval", userName);
     save(pair_surveyFile, 'selects', '-v7');
