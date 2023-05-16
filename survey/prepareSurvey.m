@@ -5,7 +5,8 @@ function [ paperTexture, paperRect, questH, ansH, questYs, ansYs ] = prepareSurv
 %--------------------------------------------------------------------------
 %                       Global variables
 %--------------------------------------------------------------------------
-global window  windowRect fontsize xCenter;
+%global window  windowRect fontsize xCenter;
+global win winRect fontsize xCenter;
 
 % Whether to use dialog to set program if no parameter is given
 % Default to yes
@@ -84,7 +85,7 @@ end
 
 % Calculate the height of each question, and the height needed for screen
 % to contain all questions
-screenH = windowRect(4);
+screenH = winRect(4);
 questH = ceil(screenH / showQuestNum);
 newsh = questH * length(questions); % new screen height
 
@@ -97,7 +98,7 @@ ansW = round(1190 / ansNum);
 fontsize = 18;
 
 % Get horizontal center of screen
-[xCenter, ~] = RectCenter(windowRect);
+[xCenter, ~] = RectCenter(winRect);
 
 
 %--------------------------------------------------------------------------
@@ -128,7 +129,7 @@ paperRect = CenterRectOnPointd(paperRect, xCenter, newsh/2);
 
 % A matrix (595 X newsh) of "1"s means a white bacground
 textureRect = zeros(ceil(paperRect(4) - paperRect(2)), ceil(paperRect(3) - paperRect(1))) +255; % adding 255 gives a white background
-paperTexture = Screen('MakeTexture', window, textureRect);
+paperTexture = Screen('MakeTexture', win, textureRect);
 
 % Set font and size of texture
 Screen('Textsize', paperTexture, fontsize);
@@ -179,6 +180,8 @@ switch survey_type
             for j = 1:ansNum
                 [~, newy] = DrawFormattedText(paperTexture, num2str(j), (j-0.5)*ansW, ny, 0); 
                 if strfind(filename, 'debrief')                                       
+                    DrawFormattedText(paperTexture, hints_debrief{j}, (j-1)*ansW, newy+28, 0);
+                elseif strfind(filename, 'eval')                                       
                     DrawFormattedText(paperTexture, hints_debrief{j}, (j-1)*ansW, newy+28, 0);
                 elseif strfind(filename, 'BFI_10')
                     DrawFormattedText(paperTexture, hints_BFI{j}, (j-0.9)*ansW, newy+28, 0);                    
