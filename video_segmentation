@@ -76,11 +76,18 @@ echo "Segment starts: "${SEGMENTSTART[@]}
 echo "Segment ends: "${SEGMENTEND[@]}
 
 # call ffmpeg using parsed segments info
-SEGMENTMAX=${#TMPARRAY[@]}
+SEGMENTMAX=${#SEGMENTNO[@]}
+echo "Number of segments: "$SEGMENTMAX
 for (( i=0; i<=$SEGMENTMAX-1; i++ )) ; do
     echo -e "\nPart "$i", with segment number "${SEGMENTNO[i]}" between "${SEGMENTSTART[i]}" and "${SEGMENTEND[i]}
     OUTFILE=$INPUTDIR"/pair"$PAIRNO"_freeConv_combined_video_seg"${SEGMENTNO[i]}".mp4"
-    ffmpeg i- "$VIDEOFILE" -ss "${SEGMENTSTART[i]}" -to "${SEGMENTEND[i]}" -c copy -reset_timestamps 1 "$OUTFILE"
+    echo $VIDEOFILE
+    echo $OUTFILE
+    ffmpeg -i $VIDEOFILE -ss ${SEGMENTSTART[i]} -to ${SEGMENTEND[i]} -c copy -reset_timestamps 1 $OUTFILE
 done
+
+
+
+
 
 
