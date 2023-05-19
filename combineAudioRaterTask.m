@@ -1,14 +1,32 @@
 function combineAudioRaterTask(inputDir, pairNo, silentTime)
 %% Function to combine the audio channels for the video rater task
 %
-% USAGE: combineAudioRaterTask(inputDir, pairNo, localLab, silentTime=0)
+% USAGE: combineAudioRaterTask(inputDir, pairNo, silentTime=0)
 %
 % For the video rater task, the two audio and video channels from the free
 % conversation task are combined together for display. This function
 % handles the audio combination part: the two microphone channels are
 % combined into one stereo channel, and are also temporally aligned with
-% the video task.
+% the video task. Alignment is to the 10th (HARDCODED) video frame of 
+% Mordor video.
 % 
+% 
+% Two types of audio recording problems are also mitigated by the function:
+%
+% (1) When a buffer underflow occured, we see the details of the missing
+% portion from the audio status parameters saved out during the task. Such
+% missing segments are recovered (injected) as segments filled with silence.
+% This behavior is controlled by two HARDCODED params, "timeDiffThr" and 
+% "missingSampleThr".
+%
+% (2) Sampling rates are not fully consistent across different sound cards
+% used and might show deviations from nominal sampling rate. Such problems
+% are detected and the recorded audio resampled if necessary. The maximum
+% tolerated deviation from nominal sampling rate is controlled by the
+% HARDCODED variable "samplingTol". 
+%
+%
+%
 % Inputs:
 % inputDir   - Char array, path to folder holding pair-level data. The
 %              folder is searched recursively for the right files.
@@ -17,7 +35,13 @@ function combineAudioRaterTask(inputDir, pairNo, silentTime)
 %              audio, to account for audio-to-video delay. In seconds. 
 %              Defaults to 0.
 %
-% The output is the edited, synched audio file.
+% The output is the edited, synched audio file at:
+% inputDir/pair[pairNo]_freeConv_combined_audio_padded[silentTime*1000].wav
+%
+%
+% Notes:
+% 
+% last edited: 2023.05.
 %
 
 
@@ -56,7 +80,7 @@ fs = 44100;
 
 % threshold for detecting and correcting for harmful underflows in the recordings
 timeDiffThr = 0.020; 
-missingSampleThr = 220;
+missingSampleThr = 225;
 
 % allowed deviation from nominal sampling frequency, in Hz
 samplingTol = 0.5;
@@ -114,12 +138,11 @@ vidLength = endFrameTime - firstFrameTime;
 tmp = load(mordorfiles.audiomat);
 audioStart.mordor = tmp.perf.firstFrameTiming;
 tstats.mordor = tmp.perf.tstats;
-% timestamp of first recorded audio frame, remote
 tmp = load(gondorfiles.audiomat);
 audioStart.gondor = tmp.perf.firstFrameTiming;
 tstats.gondor = tmp.perf.tstats;
 
-disp('Extracted relevant timestamps');
+disp('Extracted relevant timestamps and audio recording metadata');
 
 
 %% Find underflows in audio channels, based on audio frame timing
