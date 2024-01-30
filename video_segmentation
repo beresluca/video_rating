@@ -7,7 +7,7 @@
 # Positional argments are 
 #   INPUTDIR - str, path to folder containing video file to segment
 #   PAIRNO -  int, pair number, needed for finding proper file and for output file names
-#   SEGMENTS - str, path ot text file containing segmentation info
+#   SEGMENTS - str, path ot text file containing segmentation info (e.g. "segmentation_points_5parts.txt" in this repo)
 #
 # The file that SEGMENTS points to should be a text file with lines defining the segments, e.g.:
 # "
